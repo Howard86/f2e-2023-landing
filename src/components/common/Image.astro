@@ -1,0 +1,52 @@
+---
+import { findImage } from '~/utils/images';
+import {
+  getImagesOptimized,
+  astroAsseetsOptimizer,
+  unpicOptimizer,
+  type ImageProps,
+  type AttributesProps,
+} from '~/utils/images-optimization';
+
+type Props = ImageProps;
+type ImageType = {
+  src: string;
+  attributes: AttributesProps;
+};
+
+const { props } = Astro;
+
+if (props.alt === undefined || props.alt === null) {
+  throw new Error();
+}
+
+if (typeof props.width === 'string') {
+  props.width = Number.parseInt(props.width, 10);
+}
+
+if (typeof props.height === 'string') {
+  props.height = Number.parseInt(props.height, 10);
+}
+
+if (!props.loading) {
+  props.loading = 'lazy';
+}
+
+if (!props.decoding) {
+  props.decoding = 'async';
+}
+
+const foundImage = await findImage(props.src);
+
+let image: ImageType | undefined;
+
+if (foundImage !== null && typeof foundImage === 'object') {
+  image = await getImagesOptimized(foundImage, props, astroAsseetsOptimizer);
+} else if (typeof foundImage === 'string' && (foundImage.startsWith('http://') || foundImage.startsWith('https://'))) {
+  image = await getImagesOptimized(foundImage, props, unpicOptimizer);
+} else if (foundImage) {
+  image = await getImagesOptimized(foundImage, props);
+}
+---
+
+{!image ? <Fragment /> : <img src={image.src} {...image.attributes} />}
